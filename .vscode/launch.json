@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run Server",
+            "request": "launch",
+            "mainClass": "Server",
+            "vmArgs": "-Djavax.net.ssl.keyStore=serverkeystore.jks -Djavax.net.ssl.keyStorePassword=123456",
+            "preLaunchTask": "java (build): Build Workspace"
+        },
+        {
+            "type": "java",
+            "name": "Run Client",
+            "request": "launch",
+            "mainClass": "Client",
+            "vmArgs": "-Djavax.net.ssl.trustStore=serverkeystore.jks -Djavax.net.ssl.trustStorePassword=123456",
+            "preLaunchTask": "java (build): Build Workspace"
+        }
+    ]
+}
