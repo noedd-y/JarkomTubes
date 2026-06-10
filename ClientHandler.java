@@ -29,8 +29,19 @@ public class ClientHandler implements Runnable {
 
                 System.out.println("Received: " + msg);
 
+                //0. SET USERNAME
+                if (msg.startsWith("/name ")) {
+
+                    String userName = msg.substring(6);
+
+                    ChatRoom.setUserName(out, userName);
+
+                    out.writeBytes("Username set to: " + userName + "\n");
+                    out.flush();
+                }
+
                 //1. COMMAND JOIN ROOM
-                if (msg.startsWith("/join ")) {
+                else if (msg.startsWith("/join ")) {
 
                     String roomName = msg.substring(6);
 

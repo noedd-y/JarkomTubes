@@ -9,10 +9,19 @@ public class ChatRoom {
     // user → room name (biar tahu dia ada di room mana)
     public static HashMap<DataOutputStream, String> userRoom = new HashMap<>();
 
+    // user → username
+    public static HashMap<DataOutputStream, String> userNames = new HashMap<>();
+
     //buat room baru
     public static void createRoom(String roomName) {
         rooms.putIfAbsent(roomName, new Vector<>());
         System.out.println("Room created: " + roomName);
+    }
+
+    //set username
+    public static void setUserName(DataOutputStream user, String name) {
+        userNames.put(user, name);
+        System.out.println("User set name: " + name);
     }
 
     //user masuk room
@@ -33,10 +42,13 @@ public class ChatRoom {
 
             if (roomName == null) return;
 
+            String userName = userNames.getOrDefault(sender, "Anonymous");
+            String formattedMsg = "[" + userName + "]: " + message;
+
             Vector<DataOutputStream> users = rooms.get(roomName);
 
             for (DataOutputStream out : users) {
-                out.writeBytes(message + "\n");
+                out.writeBytes(formattedMsg + "\n");
                 out.flush();
             }
 
@@ -53,6 +65,7 @@ public class ChatRoom {
         if (roomName != null) {
             rooms.get(roomName).remove(user);
             userRoom.remove(user);
+            userNames.remove(user);
 
             System.out.println("User left room: " + roomName);
         }
