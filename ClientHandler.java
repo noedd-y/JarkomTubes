@@ -61,6 +61,18 @@ public class ClientHandler implements Runnable {
                     out.flush();
                 }
 
+                // Menampilkan isi room
+                else if (msg.equals("/info")){
+                    Room currentRoom = user.getCurrentRoom();
+                    StringBuilder sb = new StringBuilder(currentRoom.getOwner()+" (Owner)\n");
+                    for(User listUser: currentRoom.getUsers()){
+                        sb.append(listUser.getUsername())
+                        .append("\n");
+                    }
+                    out.writeBytes(sb.toString());
+                    out.flush();
+                }
+
                 //4. CHAT MESSAGE (NORMAL MESSAGE)
                 else {
 
