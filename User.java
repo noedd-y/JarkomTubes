@@ -3,7 +3,7 @@ import java.io.DataOutputStream;
 public class User {
 
     private String username;
-    private String currentRoom;
+    private Room currentRoom;
     private DataOutputStream out;
 
     public User(DataOutputStream out) {
@@ -20,11 +20,11 @@ public class User {
         this.username = username;
     }
 
-    public String getCurrentRoom() {
+    public Room getCurrentRoom() {
         return currentRoom;
     }
 
-    public void setCurrentRoom(String currentRoom) {
+    public void setCurrentRoom(Room currentRoom) {
         this.currentRoom = currentRoom;
     }
 
