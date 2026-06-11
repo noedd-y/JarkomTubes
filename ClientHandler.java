@@ -13,6 +13,7 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
+        User user = null;
         try {
 
             in = new BufferedReader(
@@ -20,8 +21,8 @@ public class ClientHandler implements Runnable {
 
             out = new DataOutputStream(socket.getOutputStream());
 
-            User user = new User(out);
-            ChatRoom.users.put(out, user);
+            user = new User(out);
+            // RoomHandler.users.put(out, user);
 
             System.out.println("Client connected: " +
                     socket.getInetAddress().getHostAddress());
@@ -37,7 +38,7 @@ public class ClientHandler implements Runnable {
 
                     String roomName = msg.substring(6);
 
-                    ChatRoom.joinRoom(roomName, out);
+                    RoomHandler.joinRoom(roomName, user);
 
                     out.writeBytes("Joined room: " + roomName + "\n");
                     out.flush();
@@ -46,7 +47,7 @@ public class ClientHandler implements Runnable {
                 //2. EXIT ROOM
                 else if (msg.equals("/leave")) {
 
-                    ChatRoom.leaveRoom(out);
+                    RoomHandler.leaveRoom(user);
 
                     out.writeBytes("Left room\n");
                     out.flush();
@@ -54,7 +55,7 @@ public class ClientHandler implements Runnable {
                 //3. Menampilkan semua room yang tersedia
                 else if (msg.equals("/listroom")) {
 
-                    String roomList = ChatRoom.listRooms();
+                    String roomList = RoomHandler.listRooms();
 
                     out.writeBytes(roomList + "\n");
                     out.flush();
@@ -63,13 +64,13 @@ public class ClientHandler implements Runnable {
                 //4. CHAT MESSAGE (NORMAL MESSAGE)
                 else {
 
-                    ChatRoom.broadcast(msg, out);
+                    RoomHandler.broadcast(msg, user);
                 }
             }
 
         } catch (Exception e) {
             System.out.println("Client disconnected");
-            ChatRoom.leaveRoom(out);
+            RoomHandler.leaveRoom(user);
         }
     }
 }

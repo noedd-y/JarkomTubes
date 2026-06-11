@@ -1,4 +1,3 @@
-import java.io.*;
 import java.util.*;
 
 public class RoomHandler {
@@ -8,21 +7,21 @@ public class RoomHandler {
 
     // user → room name (biar tahu dia ada di room mana)
     //public static HashMap<DataOutputStream, String> userRoom = new HashMap<>();
-    public static HashMap<String, Vector<User>> rooms = new HashMap<>();
+    public static HashMap<String, Room> rooms = new HashMap<>();
 
     // user → username
     //public static HashMap<DataOutputStream, String> userNames = new HashMap<>();
-    public static HashMap<DataOutputStream, User> users = new HashMap<>();
+    // public static HashMap<SSLContext, User> users = new HashMap<>();
 
     //buat room baru
-    public static void createRoom(String roomName) {
-        rooms.putIfAbsent(roomName, new Vector<>());
+    public static Room createRoom(String roomName, User owner) {
+        rooms.putIfAbsent(roomName, new Room(roomName, owner));
         System.out.println("Room created: " + roomName);
+        return rooms.get(roomName);
     }
 
     //set username
-    public static void setUserName(DataOutputStream out, String name) {
-        User user = users.get(out);
+    public static void setUserName(User user, String name) {
         user.setUsername(name);
     }
     // public static void setUserName(DataOutputStream user, String name) {
@@ -31,18 +30,16 @@ public class RoomHandler {
     // }
 
     //user masuk room
-    public static void joinRoom(String roomName, DataOutputStream out) {
-        User user = users.get(out);
-
+    public static void joinRoom(String roomName, User user) {
         // keluar dari room lama dulu
-        if (user.getCurrentRoom() != null) {
-            rooms.get(user.getCurrentRoom()).remove(user);
-        }
+        if (user.getCurrentRoom() != null) 
+            leaveRoom(user);
 
-        createRoom(roomName);
+        createRoom(roomName, user);
 
-        rooms.get(roomName).add(user);
-        user.setCurrentRoom(roomName);
+        Room room = rooms.get(roomName);
+        room.add(user);
+        user.setCurrentRoom(room);
     }
     // public static void joinRoom(String roomName, DataOutputStream user) {
 
@@ -55,15 +52,14 @@ public class RoomHandler {
     // }
 
     //broadcast hanya ke 1 room
-    public static void broadcast(String message, DataOutputStream sender) {
-        User user = users.get(sender);
-        String roomName = user.getCurrentRoom();
+    public static void broadcast(String message, User sender) {
+        Room room = sender.getCurrentRoom();
 
-        if (roomName == null) return;
+        if (room == null) return;
 
-        String formatted = "[" + user.getUsername() + "]: " + message;
+        String formatted = "[" + sender.getUsername() + "]: " + message;
 
-        for (User u : rooms.get(roomName)) {
+        for (User u : room.getUsers()) {
             try {
                 u.getOut().writeBytes(formatted + "\n");
                 u.getOut().flush();
@@ -94,18 +90,17 @@ public class RoomHandler {
     // }
 
     //user keluar room
-    public static void leaveRoom(DataOutputStream out) {
-        User user = users.get(out);
+    public static void leaveRoom(User user) {
         if (user == null) return;
 
-        String roomName = user.getCurrentRoom();
+        Room room = user.getCurrentRoom();
 
-        if (roomName != null) {
-            rooms.get(roomName).remove(user);
+        if (room != null) {
+            room.remove(user);
             user.setCurrentRoom(null);
         }
 
-        System.out.println("User left room: " + roomName);
+        System.out.println("User left room: " + room);
     }
     // public static void leaveRoom(DataOutputStream user) {
 
