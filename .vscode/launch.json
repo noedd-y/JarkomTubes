@@ -8,7 +8,7 @@
             "type": "java",
             "name": "ClientGUI",
             "request": "launch",
-            "mainClass": "ClientGUI",
+            "mainClass": "ClientGUI"
         },
         {
             "type": "java",
