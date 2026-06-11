@@ -1,3 +1,14 @@
+error id: file:///D:/Data/Life/UNPAR/SEM%206/JARKOM/tugas/Tubes/ClientHandler.java:java/io/DataOutputStream#writeBytes().
+file:///D:/Data/Life/UNPAR/SEM%206/JARKOM/tugas/Tubes/ClientHandler.java
+empty definition using pc, found symbol in pc: java/io/DataOutputStream#writeBytes().
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 1014
+uri: file:///D:/Data/Life/UNPAR/SEM%206/JARKOM/tugas/Tubes/ClientHandler.java
+text:
+```scala
 import java.io.*;
 import javax.net.ssl.*;
 
@@ -20,9 +31,6 @@ public class ClientHandler implements Runnable {
 
             out = new DataOutputStream(socket.getOutputStream());
 
-            User user = new User(out);
-            ChatRoom.users.put(out, user);
-
             System.out.println("Client connected: " +
                     socket.getInetAddress().getHostAddress());
 
@@ -39,7 +47,7 @@ public class ClientHandler implements Runnable {
 
                     ChatRoom.setUserName(out, userName);
 
-                    out.writeBytes("Username set to: " + userName + "\n");
+                    out.wri@@teBytes("Username set to: " + userName + "\n");
                     out.flush();
                 }
 
@@ -84,3 +92,9 @@ public class ClientHandler implements Runnable {
         }
     }
 }
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: java/io/DataOutputStream#writeBytes().
