@@ -33,8 +33,17 @@ public class ClientHandler implements Runnable {
 
                 System.out.println("Received: " + msg);
 
-                //1. COMMAND JOIN ROOM
-                if (msg.startsWith("/join ")) {
+                //1. SET USERNAME
+                if (msg.startsWith("/username ")) {
+                    String username = msg.substring(10).trim();
+                    if (!username.isEmpty()) {
+                        RoomHandler.setUserName(user, username);
+                        out.writeBytes("Username set to: " + username + "\n");
+                        out.flush();
+                    }
+                }
+                //2. COMMAND JOIN ROOM
+                else if (msg.startsWith("/join ")) {
 
                     String roomName = msg.substring(6);
 
@@ -44,7 +53,7 @@ public class ClientHandler implements Runnable {
                     out.flush();
                 }
 
-                //2. EXIT ROOM
+                //3. EXIT ROOM
                 else if (msg.equals("/leave")) {
 
                     RoomHandler.leaveRoom(user);
@@ -52,7 +61,7 @@ public class ClientHandler implements Runnable {
                     out.writeBytes("Left room\n");
                     out.flush();
                 }
-                //3. Menampilkan semua room yang tersedia
+                //4. Menampilkan semua room yang tersedia
                 else if (msg.equals("/listroom")) {
 
                     String roomList = RoomHandler.listRooms();
@@ -61,7 +70,7 @@ public class ClientHandler implements Runnable {
                     out.flush();
                 }
 
-                //4. CHAT MESSAGE (NORMAL MESSAGE)
+                //5. CHAT MESSAGE (NORMAL MESSAGE)
                 else {
 
                     RoomHandler.broadcast(msg, user);

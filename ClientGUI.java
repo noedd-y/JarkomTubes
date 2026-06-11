@@ -14,15 +14,18 @@ public class ClientGUI {
 	private JTextArea chatArea;
 	private JTextField inputField;
 	private JTextField roomField;
+	private JTextField usernameField;
 	private JButton sendBtn;
 	private JButton joinBtn;
 	private JButton listBtn;
 	private JButton addBtn;
 	private JButton exitBtn;
+	private JButton loginBtn;
+	private JPanel cards;
+	private CardLayout cardLayout;
 
 	public ClientGUI() {
 		initUI();
-		connectToServer();
 	}
 
 	private void initUI() {
@@ -31,10 +34,32 @@ public class ClientGUI {
 		frame.setSize(600, 400);
 		frame.setLayout(new BorderLayout());
 
+		cards = new JPanel();
+		cardLayout = new CardLayout();
+		cards.setLayout(cardLayout);
+
+		JPanel loginPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(8, 8, 8, 8);
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		loginPanel.add(new JLabel("Enter your username:"), gbc);
+
+		usernameField = new JTextField(18);
+		gbc.gridy = 1;
+		loginPanel.add(usernameField, gbc);
+
+		loginBtn = new JButton("Continue");
+		gbc.gridy = 2;
+		loginPanel.add(loginBtn, gbc);
+
+		cards.add(loginPanel, "login");
+
+		JPanel chatPanel = new JPanel(new BorderLayout());
 		chatArea = new JTextArea();
 		chatArea.setEditable(false);
 		JScrollPane scroll = new JScrollPane(chatArea);
-		frame.add(scroll, BorderLayout.CENTER);
+		chatPanel.add(scroll, BorderLayout.CENTER);
 
 		JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		roomField = new JTextField(12);
@@ -50,7 +75,7 @@ public class ClientGUI {
 		top.add(listBtn);
 		top.add(exitBtn);
 
-		frame.add(top, BorderLayout.NORTH);
+		chatPanel.add(top, BorderLayout.NORTH);
 
 		JPanel bottom = new JPanel(new BorderLayout());
 		inputField = new JTextField();
@@ -58,9 +83,15 @@ public class ClientGUI {
 		bottom.add(inputField, BorderLayout.CENTER);
 		bottom.add(sendBtn, BorderLayout.EAST);
 
-		frame.add(bottom, BorderLayout.SOUTH);
+		chatPanel.add(bottom, BorderLayout.SOUTH);
+		cards.add(chatPanel, "chat");
+
+		frame.add(cards, BorderLayout.CENTER);
 
 		// Actions
+		loginBtn.addActionListener(e -> login());
+		usernameField.addActionListener(e -> login());
+
 		sendBtn.addActionListener(e -> sendChat());
 		inputField.addActionListener(e -> sendChat());
 
@@ -76,11 +107,12 @@ public class ClientGUI {
 			}
 		});
 
+		setChatControlsEnabled(false);
 		frame.setLocationRelativeTo(null);
 		frame.setVisible(true);
 	}
 
-	private void connectToServer() {
+	private void connectToServer(String username) {
 		try {
 			SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
 			socket = (SSLSocket) factory.createSocket("127.0.0.1", 6789);
@@ -88,7 +120,10 @@ public class ClientGUI {
 			out = new DataOutputStream(socket.getOutputStream());
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-			appendChat("=== Connected to Chat Server ===");
+			out.writeBytes("/username " + username + "\n");
+			out.flush();
+
+			appendChat("=== Connected as " + username + " ===");
 
 			Thread readThread = new Thread(() -> {
 				try {
@@ -102,11 +137,34 @@ public class ClientGUI {
 			});
 
 			readThread.start();
+			setChatControlsEnabled(true);
 
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(frame, "Failed to connect to server:\n" + e.getMessage(), "Connection Error", JOptionPane.ERROR_MESSAGE);
 			appendChat("Could not connect: " + e.getMessage());
+			cardLayout.show(cards, "login");
 		}
+	}
+
+	private void login() {
+		String username = usernameField.getText().trim();
+		if (username.isEmpty()) {
+			JOptionPane.showMessageDialog(frame, "Please enter a username before continuing.", "Username Required", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		connectToServer(username);
+		frame.setTitle("Chat Room Client - " + username);
+		cardLayout.show(cards, "chat");
+	}
+
+	private void setChatControlsEnabled(boolean enabled) {
+		sendBtn.setEnabled(enabled);
+		inputField.setEnabled(enabled);
+		joinBtn.setEnabled(enabled);
+		listBtn.setEnabled(enabled);
+		addBtn.setEnabled(enabled);
+		exitBtn.setEnabled(enabled);
 	}
 
 	private void sendChat() {
