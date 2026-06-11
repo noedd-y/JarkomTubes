@@ -1,7 +1,7 @@
-import java.util.*;
 import java.io.*;
+import java.util.*;
 
-public class ChatRoom {
+public class RoomHandler {
 
     // nama room → list user di room itu
     //public static HashMap<String, Vector<DataOutputStream>> rooms = new HashMap<>();
