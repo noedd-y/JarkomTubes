@@ -8,8 +8,7 @@
             "type": "java",
             "name": "ClientGUI",
             "request": "launch",
-            "mainClass": "ClientGUI",
-            "projectName": "Tubes_b0bfda63"
+            "mainClass": "ClientGUI"
         },
         {
             "type": "java",
