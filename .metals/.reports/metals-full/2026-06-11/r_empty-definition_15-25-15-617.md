@@ -1,34 +1,57 @@
+error id: file:///D:/Data/Life/UNPAR/SEM%206/JARKOM/tugas/Tubes/ClientGUI.java:javax/swing/JOptionPane#PLAIN_MESSAGE.
+file:///D:/Data/Life/UNPAR/SEM%206/JARKOM/tugas/Tubes/ClientGUI.java
+empty definition using pc, found symbol in pc: javax/swing/JOptionPane#PLAIN_MESSAGE.
+empty definition using semanticdb
+empty definition using fallback
+non-local guesses:
+
+offset: 797
+uri: file:///D:/Data/Life/UNPAR/SEM%206/JARKOM/tugas/Tubes/ClientGUI.java
+text:
+```scala
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import javax.net.ssl.*;
-import javax.swing.*;
 
 public class ClientGUI {
 
 	private SSLSocket socket;
 	private DataOutputStream out;
 	private BufferedReader in;
+	private String userName;
 
 	private JFrame frame;
 	private JTextArea chatArea;
 	private JTextField inputField;
 	private JTextField roomField;
+	private JTextField userNameField;
 	private JButton sendBtn;
 	private JButton joinBtn;
 	private JButton listBtn;
-	private JButton addBtn;
+	private JButton setNameBtn;
 	private JButton exitBtn;
 
 	public ClientGUI() {
+		promptForUserName();
 		initUI();
 		connectToServer();
 	}
 
+	private void promptForUserName() {
+		userName = JOptionPane.showInputDialog(null, 
+			"Enter your username:", "Chat Room Client", 
+			JOptionPane.PLA@@IN_MESSAGE);
+		if (userName == null || userName.trim().isEmpty()) {
+			userName = "User" + System.currentTimeMillis() % 10000;
+		}
+	}
+
 	private void initUI() {
-		frame = new JFrame("Chat Room Client");
+		frame = new JFrame("Chat Room Client - " + userName);
 		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		frame.setSize(600, 400);
+		frame.setSize(700, 450);
 		frame.setLayout(new BorderLayout());
 
 		chatArea = new JTextArea();
@@ -37,15 +60,20 @@ public class ClientGUI {
 		frame.add(scroll, BorderLayout.CENTER);
 
 		JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		
+		userNameField = new JTextField(userName, 10);
+		setNameBtn = new JButton("Set Name");
+		
 		roomField = new JTextField(12);
-        addBtn = new JButton("Add Room");
 		joinBtn = new JButton("Join");
 		listBtn = new JButton("List Rooms");
 		exitBtn = new JButton("Exit");
 
-		top.add(new JLabel("Room:"));
+		top.add(new JLabel("Name:"));
+		top.add(userNameField);
+		top.add(setNameBtn);
+		top.add(new JLabel("  |  Room:"));
 		top.add(roomField);
-		top.add(addBtn);
 		top.add(joinBtn);
 		top.add(listBtn);
 		top.add(exitBtn);
@@ -66,7 +94,7 @@ public class ClientGUI {
 
 		joinBtn.addActionListener(e -> joinRoom());
 		listBtn.addActionListener(e -> requestRoomList());
-		addBtn.addActionListener(e -> addRoom());
+		setNameBtn.addActionListener(e -> setUserName());
 		exitBtn.addActionListener(e -> closeConnection());
 
 		frame.addWindowListener(new WindowAdapter() {
@@ -89,6 +117,10 @@ public class ClientGUI {
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
 			appendChat("=== Connected to Chat Server ===");
+			
+			// Send username to server
+			out.writeBytes("/name " + userName + "\n");
+			out.flush();
 
 			Thread readThread = new Thread(() -> {
 				try {
@@ -145,16 +177,18 @@ public class ClientGUI {
 		}
 	}
 
-	private void addRoom() {
-		//add room ini untuk room baru, kalau join room itu untuk masuk ke room yang sudah ada
-        String room = roomField.getText().trim();
-        if (room.isEmpty() || out == null) return;
-        try {
-            out.writeBytes("/join " + room + "\n");
-            out.flush();
-        } catch (Exception e) {
-            appendChat("Failed to add room: " + e.getMessage());
-        }
+	private void setUserName() {
+		String newName = userNameField.getText().trim();
+		if (newName.isEmpty() || out == null) return;
+
+		try {
+			out.writeBytes("/name " + newName + "\n");
+			out.flush();
+			userName = newName;
+			frame.setTitle("Chat Room Client - " + userName);
+		} catch (Exception e) {
+			appendChat("Failed to set username: " + e.getMessage());
+		}
 	}
 
 	private void closeConnection() {
@@ -178,16 +212,13 @@ public class ClientGUI {
 	}
 
 	public static void main(String[] args) {
-		System.setProperty(
-			"javax.net.ssl.trustStore",
-			"serverkeystore.jks"
-		);
-
-		System.setProperty(
-			"javax.net.ssl.trustStorePassword",
-			"123456"
-		);
-		
 		SwingUtilities.invokeLater(() -> new ClientGUI());
 	}
 }
+
+```
+
+
+#### Short summary: 
+
+empty definition using pc, found symbol in pc: javax/swing/JOptionPane#PLAIN_MESSAGE.

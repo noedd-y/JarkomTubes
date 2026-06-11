@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "ClientGUI",
+            "request": "launch",
+            "mainClass": "ClientGUI",
+            "projectName": "Tubes_b0bfda63"
+        },
+        {
+            "type": "java",
             "name": "Run Server",
             "request": "launch",
             "mainClass": "Server",
