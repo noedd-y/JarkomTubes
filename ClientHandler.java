@@ -73,8 +73,10 @@ public class ClientHandler implements Runnable {
                 // Menampilkan isi room
                 else if (msg.equals("/info")){
                     Room currentRoom = user.getCurrentRoom();
-                    StringBuilder sb = new StringBuilder(currentRoom.getOwner()+" (Owner)\n");
+                    StringBuilder sb = new StringBuilder(currentRoom.getOwner().getUsername()+" (Owner)\n");
                     for(User listUser: currentRoom.getUsers()){
+                        if(currentRoom.getOwner() == user)
+                            continue;
                         sb.append(listUser.getUsername())
                         .append("\n");
                     }
