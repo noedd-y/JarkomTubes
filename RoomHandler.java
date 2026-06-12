@@ -138,4 +138,58 @@ public class RoomHandler {
 
         return result.toString();
     }
+
+    //untuk kick user
+    public static void kickUser(User owner, String username) {
+        Room room = owner.getCurrentRoom();
+
+        if(room == null)
+            return;
+
+        if(room.getOwner() != owner)
+            return;
+
+        for(User u : room.getUsers()) {
+
+            if(u.getUsername().equals(username)) {
+
+                room.remove(u);
+                u.setCurrentRoom(null);
+
+                try {
+                    u.getOut().writeBytes(
+                        "You were kicked from room.\n"
+                    );
+                    u.getOut().flush();
+                }
+                catch(Exception e){}
+
+                break;
+            }
+        }
+    }
+
+    //untuk owner menutup room 
+    public static void closeRoom(User owner) {
+        Room room = owner.getCurrentRoom();
+        if(room == null)
+            return;
+
+        if(room.getOwner() != owner)
+            return;
+
+        for(User u : room.getUsers()) {
+            try {
+                if(u != owner) {
+                    u.setCurrentRoom(null);
+                    u.getOut().writeBytes(
+                        "/roomclosed\n"
+                    );
+                    u.getOut().flush();
+                }
+            } catch(Exception e){}
+        }
+        rooms.remove(room.getName());
+        owner.setCurrentRoom(null);
+    }
 }
