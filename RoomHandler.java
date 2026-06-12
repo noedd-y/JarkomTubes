@@ -2,55 +2,58 @@ import java.util.*;
 
 public class RoomHandler {
 
-    // nama room → list user di room itu
-    //public static HashMap<String, Vector<DataOutputStream>> rooms = new HashMap<>();
-
-    // user → room name (biar tahu dia ada di room mana)
-    //public static HashMap<DataOutputStream, String> userRoom = new HashMap<>();
+    // nama room dan list room currently
     public static HashMap<String, Room> rooms = new HashMap<>();
-
-    // user → username
-    //public static HashMap<DataOutputStream, String> userNames = new HashMap<>();
-    // public static HashMap<SSLContext, User> users = new HashMap<>();
 
     //buat room baru
     public static Room createRoom(String roomName, User owner) {
-        rooms.putIfAbsent(roomName, new Room(roomName, owner));
-        System.out.println("Room created: " + roomName);
-        return rooms.get(roomName);
-    }
+        if(isOwner(owner)){
+            return null;
+        }
+       if (rooms.containsKey(roomName)) {
+            return null;
+        }
 
-    //set username
-    public static void setUserName(User user, String name) {
-        user.setUsername(name);
+        Room room = new Room(roomName, owner);
+        rooms.put(roomName, room);
+
+
+        joinRoom(roomName, owner);
+        return room;
     }
-    // public static void setUserName(DataOutputStream user, String name) {
-    //     userNames.put(user, name);
-    //     System.out.println("User set name: " + name);
-    // }
 
     //user masuk room
-    public static void joinRoom(String roomName, User user) {
-        // keluar dari room lama dulu
-        if (user.getCurrentRoom() != null) 
-            leaveRoom(user);
+   public static boolean joinRoom(String roomName, User user) {
 
-        createRoom(roomName, user);
+    leaveRoom(user);
 
-        Room room = rooms.get(roomName);
+    Room room = rooms.get(roomName);
+
+    if (room != null) {
+
         room.add(user);
+
         user.setCurrentRoom(room);
+
+        broadcast("Has joined the room", user);
+
+        broadcastMemberList(room);
+
+        System.out.println(
+            user.getUsername() +
+            " has successfully joined room"
+        );
+
+        return true;
     }
-    // public static void joinRoom(String roomName, DataOutputStream user) {
 
-    //     createRoom(roomName);
+    System.out.println(
+        user.getUsername() +
+        " has unable to join room"
+    );
 
-    //     rooms.get(roomName).add(user);
-    //     userRoom.put(user, roomName);
-
-    //     System.out.println("User joined room: " + roomName);
-    // }
-
+    return false;
+}
     //broadcast hanya ke 1 room
     public static void broadcast(String message, User sender) {
         Room room = sender.getCurrentRoom();
@@ -68,52 +71,66 @@ public class RoomHandler {
             }
         }
     }
-    // public static void broadcast(String message, DataOutputStream sender) {
-    //     try {
-    //         String roomName = userRoom.get(sender);
 
-    //         if (roomName == null) return;
+    public static void broadcastMemberList(Room room) {
 
-    //         String userName = userNames.getOrDefault(sender, "Anonymous");
-    //         String formattedMsg = "[" + userName + "]: " + message;
+    if (room == null) return;
 
-    //         Vector<DataOutputStream> users = rooms.get(roomName);
+    StringBuilder sb = new StringBuilder("MEMBERS:");
 
-    //         for (DataOutputStream out : users) {
-    //             out.writeBytes(formattedMsg + "\n");
-    //             out.flush();
-    //         }
+    sb.append(room.getOwner().getUsername());
 
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //     }
-    // }
+    for (User u : room.getUsers()) {
 
-    //user keluar room
-    public static void leaveRoom(User user) {
-        if (user == null) return;
-
-        Room room = user.getCurrentRoom();
-
-        if (room != null) {
-            room.remove(user);
-            user.setCurrentRoom(null);
+        if (u == room.getOwner()) {
+            continue;
         }
 
-        System.out.println("User left room: " + room);
+        sb.append(",")
+          .append(u.getUsername());
     }
-    // public static void leaveRoom(DataOutputStream user) {
 
-    //     String roomName = userRoom.get(user);
+    String memberData = sb.toString();
 
-    //     if (roomName != null) {
-    //         rooms.get(roomName).remove(user);
-    //         userRoom.remove(user);
-    //         userNames.remove(user);
+    for (User u : room.getUsers()) {
+        try {
+            u.getOut().writeBytes(memberData + "\n");
+            u.getOut().flush();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+}
 
-    //         System.out.println("User left room: " + roomName);
-    //     }
-    // }
+    //user keluar room
+        public static boolean leaveRoom(User user) {
+
+    Room room = user.getCurrentRoom();
+
+    if (room == null) {
+        return false;
+    }
+
+    boolean removed = room.remove(user);
+
+    if (removed) {
+
+        user.setCurrentRoom(null);
+
+        System.out.println(
+            user.getUsername() +
+            " left room " +
+            room.getName()
+        );
+
+        broadcastMemberList(room);
+
+        return true;
+    }
+
+    return false;
+}
 
     // Menampilkan semua room yang tersedia
     public static String listRooms() {
@@ -134,6 +151,23 @@ public class RoomHandler {
                 .append(" (")
                 .append(jumlahUser)
                 .append(" user)\n");
+        }
+
+        return result.toString();
+    }
+
+    public static String infoRoom(Room currentRoom) {
+        if(!rooms.containsValue(currentRoom))
+            return "Room not found";
+
+        StringBuilder result = new StringBuilder("=== ROOM INFO: "+currentRoom.getName()+" ===\n");
+
+        result.append(currentRoom.getOwner().getUsername()).append(" (Owner)\n");
+        for(User listUser: currentRoom.getUsers()){
+            if(currentRoom.getOwner() == listUser)
+                continue;
+            result.append(listUser.getUsername())
+            .append("\n");
         }
 
         return result.toString();
@@ -181,7 +215,7 @@ public class RoomHandler {
         for(User u : room.getUsers()) {
             try {
                 if(u != owner) {
-                    u.setCurrentRoom(null);
+                    leaveRoom(u);
                     u.getOut().writeBytes(
                         "/roomclosed\n"
                     );
@@ -191,5 +225,13 @@ public class RoomHandler {
         }
         rooms.remove(room.getName());
         owner.setCurrentRoom(null);
+    }
+
+    //check kalo user == owner
+    public static boolean isOwner(User user) {
+        Room room = user.getCurrentRoom();
+
+        return room != null &&
+            room.getOwner().equals(user);
     }
 }

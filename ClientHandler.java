@@ -37,85 +37,113 @@ public class ClientHandler implements Runnable {
                 if (msg.startsWith("/username ")) {
                     String username = msg.substring(10).trim();
                     if (!username.isEmpty()) {
-                        RoomHandler.setUserName(user, username);
+                        // RoomHandler.setUserName(user, username);
+                        user.setUsername(username);
                         out.writeBytes("Username set to: " + username + "\n");
                         out.flush();
                     }
+                }
+                else if (msg.startsWith("/addroom ")) {
+
+                    String roomName = msg.substring(9);
+
+                    if(RoomHandler.createRoom(roomName, user) != null){
+                        out.writeBytes("Created room: " + roomName + "\n");
+                        out.flush();
+                    }
+                    else{
+                        out.writeBytes("Unable to create room: " + roomName + "\n");
+                        out.flush();
+                    }
+                    
                 }
                 // join room
                 else if (msg.startsWith("/join ")) {
 
                     String roomName = msg.substring(6).trim();
 
-                    RoomHandler.joinRoom(roomName, user);
-
-                    out.writeBytes("Joined room: " + roomName + "\n");
-                    out.flush();
-
-                    // ========================================================
-                    // REVISI 1: BROADCAST MEMBER LIST TERBARU KE SEMUA ORANG
-                    // ========================================================
-                    Room currentRoom = user.getCurrentRoom();
-                    if (currentRoom != null) {
-                        StringBuilder sb = new StringBuilder();
-                        // Baris pertama: beri tahu Client siapa Owner dinamisnya saat ini
-                        if (currentRoom.getOwner() != null) {
-                            sb.append(currentRoom.getOwner().getUsername()).append("\n");
-                        }
-                        // Baris berikutnya: kumpulkan semua member biasa
-                        for (User listUser : currentRoom.getUsers()) {
-                            if (currentRoom.getOwner() == listUser) {
-                                continue; // Lewati owner karena sudah di baris pertama
+                    if(RoomHandler.joinRoom(roomName, user)){
+                        out.writeBytes("Joined room: " + roomName + "\n");
+                        out.flush();
+                        // ========================================================
+                        // REVISI 1: BROADCAST MEMBER LIST TERBARU KE SEMUA ORANG
+                        // ========================================================
+                        Room currentRoom = user.getCurrentRoom();
+                        if (currentRoom != null) {
+                            StringBuilder sb = new StringBuilder();
+                            // Baris pertama: beri tahu Client siapa Owner dinamisnya saat ini
+                            if (currentRoom.getOwner() != null) {
+                                sb.append(currentRoom.getOwner().getUsername()).append("\n");
                             }
-                            sb.append(listUser.getUsername()).append("\n");
-                        }
+                            // Baris berikutnya: kumpulkan semua member biasa
+                            for (User listUser : currentRoom.getUsers()) {
+                                if (currentRoom.getOwner() == listUser) {
+                                    continue; // Lewati owner karena sudah di baris pertama
+                                }
+                                sb.append(listUser.getUsername()).append("\n");
+                            }
 
-                        // Broadcast data member ke semua orang di room tersebut
-                        String memberListData = sb.toString();
-                        for (User u : currentRoom.getUsers()) {
-                            u.getOutputStream().writeBytes(memberListData);
-                            u.getOutputStream().flush();
+                            // Broadcast data member ke semua orang di room tersebut
+                            String memberListData = sb.toString();
+                            for (User u : currentRoom.getUsers()) {
+                                u.getOutputStream().writeBytes(memberListData);
+                                u.getOutputStream().flush();
+                            }
                         }
                     }
-                    // ========================================================
+                    else {
+                        out.writeBytes("Unable to join: " + roomName + "\n");
+                        out.flush();
+                    }
+                    
                 }
                 // exit room
                 else if (msg.equals("/leave")) {
 
-                    RoomHandler.leaveRoom(user);
-
-                    out.writeBytes("Left room\n");
-                    out.flush();
+                    if(RoomHandler.leaveRoom(user)){
+                        out.writeBytes("Left room\n");
+                        out.flush();
+                    }
+                    else {
+                        out.writeBytes("Unable to leave room\n");
+                        out.flush();
+                    }
                 }
-                // menampilkan semua room yang tersedia
-                else if (msg.equals("/listroom")) {
 
-                    String roomList = RoomHandler.listRooms();
+            else if (msg.equals("/listroom")) {
 
-                    out.writeBytes(roomList + "\n");
-                    out.flush();
+                StringBuilder sb = new StringBuilder("ROOMLIST:");
+
+                boolean first = true;
+
+                for (String roomName : RoomHandler.rooms.keySet()) {
+
+                    if (!first) {
+                        sb.append(",");
+                    }
+
+                    Room room = RoomHandler.rooms.get(roomName);
+
+                    sb.append(roomName)
+                    .append("|")
+                    .append(room.getOwner().getUsername())
+                    .append("|")
+                    .append(room.size());
+
+                    first = false;
                 }
+
+                out.writeBytes(sb.toString() + "\n");
+                out.flush();
+            }
                 // Menampilkan isi room
                 else if (msg.equals("/info")){
                     Room currentRoom = user.getCurrentRoom();
-                    if (currentRoom != null) {
-                        StringBuilder sb = new StringBuilder();
-                        
-                        // Letakkan Owner di baris pertama
-                        if (currentRoom.getOwner() != null) {
-                            sb.append(currentRoom.getOwner().getUsername()).append("\n");
-                        }
-                        
-                        // REVISI 2: Perbaikan perbandingan objek loop (listUser, bukan user)
-                        for (User listUser : currentRoom.getUsers()) {
-                            if (currentRoom.getOwner() == listUser) {
-                                continue; 
-                            }
-                            sb.append(listUser.getUsername()).append("\n");
-                        }
-                        out.writeBytes(sb.toString());
-                        out.flush();
-                    }
+                    
+                    String result = RoomHandler.infoRoom(currentRoom);
+
+                    out.writeBytes(result);
+                    out.flush();
                 }
                 // untuk kick user dari room 
                 else if(msg.startsWith("/kick ")) {

@@ -32,10 +32,12 @@ public class ClientGUI {
     private String currentRoom;
     private String currentRoomOwner; // Dinamis mendeteksi owner asli ruangan
     private boolean isOwner; 
+    private boolean justClosedRoom = false;
+    private String lastClosedRoom = null;
 
     private DefaultListModel<String> roomsModel;
     private JList<String> roomsList;
-    private List<String> roomNames;
+    private List<String> roomNames = new ArrayList<>(); // Menyimpan daftar nama room murni dari server
 
     private JPanel membersPanel;
     private List<String> memberNames = new ArrayList<>();
@@ -75,7 +77,6 @@ public class ClientGUI {
         // ===================== MAIN MENU PANEL =====================
         JPanel mainPanel = new JPanel(new BorderLayout());
         roomsModel = new DefaultListModel<>();
-        roomNames = new ArrayList<>();
         roomsList = new JList<>(roomsModel);
         roomsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane roomsScroll = new JScrollPane(roomsList);
@@ -172,13 +173,23 @@ public class ClientGUI {
 
         refreshRoomsBtn.addActionListener(e -> requestRoomList());
         
+        // Klik list room langsung mengisi input text di menu utama
+        roomsList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && roomsList.getSelectedIndex() != -1) {
+                int index = roomsList.getSelectedIndex();
+                if (index < roomNames.size()) {
+                    mainRoomField.setText(roomNames.get(index));
+                }
+            }
+        });
+
         joinRoomBtn.addActionListener(e -> {
             String room = mainRoomField.getText().trim();
             if (!room.isEmpty()) {
                 roomField.setText(room);
                 joinRoom();
             } else {
-                JOptionPane.showMessageDialog(frame, "Please type a room name in the input field to join.", "Input Required", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(frame, "Please type or select a room name to join.", "Input Required", JOptionPane.WARNING_MESSAGE);
             }
         });
 
@@ -247,6 +258,12 @@ public class ClientGUI {
                             continue;
                         }
 
+                        if (msg.startsWith("ROOMCLOSED:")) {
+                            String payload = msg.substring("ROOMCLOSED:".length()).trim();
+                            handleRoomClosed(payload);
+                            continue;
+                        }
+
                         if (currentRoom != null && !trimmedMsg.isEmpty() && !trimmedMsg.contains(":") && !trimmedMsg.contains(" ")) {
                             addIncomingMemberUpdate(trimmedMsg);
                             continue;
@@ -267,7 +284,6 @@ public class ClientGUI {
                         } else {
                             appendSystemMessage(msg);
                             
-                            // Otomatis minta list terbaru ke server jika mendeteksi teks notifikasi join/masuk room
                             String lowerMsg = trimmedMsg.toLowerCase();
                             if (currentRoom != null && (lowerMsg.contains("join") || lowerMsg.contains("room") || lowerMsg.contains("masuk"))) {
                                 triggerSilentInfoRequest();
@@ -317,41 +333,59 @@ public class ClientGUI {
                     display = p;
                 }
 
-                roomNames.add(roomName);
+                roomNames.add(roomName); 
                 roomsModel.addElement(display);
             }
         });
     }
 
     private void handleMemberList(String payload) {
-        String[] parts = payload.isEmpty() ? new String[0] : payload.split(",");
-        SwingUtilities.invokeLater(() -> {
-            memberNames.clear();
-            String serverOwner = null;
-            for (int i = 0; i < parts.length; i++) {
-                String u = parts[i].trim();
-                if (u.isEmpty()) continue;
-                if (i == 0) serverOwner = u; 
-                if (!memberNames.contains(u)) {
-                    memberNames.add(u);
-                }
-            }
-            // REVISI DINAMIS: Ambil owner langsung dari nama pertama yang diberikan server
-            if (!isOwner && serverOwner != null) {
-                currentRoomOwner = serverOwner;
-            }
-            updateOwnerControls();
-            updateRoomInfoLabel();
-        });
-    }
+    String[] parts = payload.isEmpty() ? new String[0] : payload.split(",");
 
+    SwingUtilities.invokeLater(() -> {
+
+        memberNames.clear();
+
+        String serverOwner = null;
+
+        for (int i = 0; i < parts.length; i++) {
+            String u = parts[i].trim();
+
+            if (u.isEmpty()) continue;
+
+            if (i == 0) {
+                serverOwner = u;
+            }
+
+            if (!memberNames.contains(u)) {
+                memberNames.add(u);
+            }
+        }
+
+        if (serverOwner != null) {
+            currentRoomOwner = serverOwner;
+
+            if (currentUsername != null &&
+                currentUsername.equalsIgnoreCase(serverOwner)) {
+
+                isOwner = true;
+
+            } else {
+
+                isOwner = false;
+            }
+        }
+
+        updateOwnerControls();
+        updateRoomInfoLabel();
+    });
+}
     private void addIncomingMemberUpdate(String username) {
         SwingUtilities.invokeLater(() -> {
             if (!memberNames.contains(username)) {
                 memberNames.add(username);
             }
             
-            // REVISI DINAMIS: Jika belum terdaftar owner-nya, isi dengan nama pertama yang terbaca
             if (isOwner) {
                 currentRoomOwner = currentUsername;
             } else if (currentRoomOwner == null) {
@@ -387,16 +421,22 @@ public class ClientGUI {
     }
 
     private void resetRoomState() {
-        currentRoom = null;
-        currentRoomOwner = null;
-        isOwner = false;
-        memberNames.clear();
-        rebuildMembersPanel();
-        roomField.setText("");
-        mainRoomField.setText("");
-        updateOwnerControls();
-        updateRoomInfoLabel();
-    }
+
+    currentRoom = null;
+    currentRoomOwner = null;
+
+    isOwner = false;
+
+    memberNames.clear();
+
+    rebuildMembersPanel();
+
+    roomField.setText("");
+    mainRoomField.setText("");
+
+    updateOwnerControls();
+    updateRoomInfoLabel();
+}
 
     private void updateOwnerControls() {
         closeRoomBtn.setEnabled(isOwner && currentRoom != null);
@@ -422,7 +462,6 @@ public class ClientGUI {
                 label.setForeground(new Color(0x2E7D32)); 
                 label.setText(member + " (You)");
             } else if (currentRoomOwner != null && member.equals(currentRoomOwner)) {
-                // REVISI DINAMIS: Pewarnaan orange tag Owner berdasarkan variabel dinamis currentRoomOwner
                 label.setForeground(new Color(0xD84315)); 
                 label.setText(member + " (Owner)");
             } else {
@@ -431,12 +470,10 @@ public class ClientGUI {
             
             row.add(label, BorderLayout.WEST);
             
-            // Tombol Kick tampil dinamis untuk siapa pun selain diri kita sendiri
             if (currentUsername != null && !member.equals(currentUsername)) {
                 JButton kickButton = new JButton("Kick");
                 kickButton.setMargin(new Insets(2, 6, 2, 6));
                 
-                // Hanya menyala dan aktif jika kita terdeteksi sebagai owner ruangan saat ini
                 if (isOwner) {
                     kickButton.setEnabled(true); 
                     kickButton.addActionListener(e -> {
@@ -463,7 +500,6 @@ public class ClientGUI {
         if (currentRoom == null) {
             roomInfoLabel.setText("Not in a room");
         } else {
-            
             String ownerInfo = isOwner ? currentUsername : (currentRoomOwner != null ? currentRoomOwner : "?");
             String role = isOwner ? " (You are the owner)" : "";
             roomInfoLabel.setText("Room: " + currentRoom + " | Owner: " + ownerInfo + role);
@@ -522,6 +558,9 @@ public class ClientGUI {
         if (ok != JOptionPane.YES_OPTION) return;
 
         try {
+            // mark that we just requested close for this room so leaveRoomToMain won't re-add it
+            justClosedRoom = true;
+            lastClosedRoom = currentRoom;
             out.writeBytes("/closeroom\n");
             out.flush();
         } catch (Exception e) {
@@ -547,6 +586,7 @@ public class ClientGUI {
         }
     }
 
+    // METHOD REVISI: Validasi ketat untuk Join Room yang sudah ada
     private void joinRoom() {
         String room = roomField.getText().trim();
         if (room.isEmpty()) return;
@@ -555,12 +595,28 @@ public class ClientGUI {
             return;
         }
 
+        // Mengecek apakah room terdaftar di server list
+        boolean roomExists = false;
+        for (String existingRoom : roomNames) {
+            if (existingRoom.equalsIgnoreCase(room)) {
+                roomExists = true;
+                break;
+            }
+        }
+
+        if (!roomExists) {
+            JOptionPane.showMessageDialog(frame, 
+                "Room '" + room + "' does not exist!\nPlease create the room first or choose an existing room from the list.", 
+                "Room Not Found", JOptionPane.ERROR_MESSAGE);
+            return; 
+        }
+
         try {
             out.writeBytes("/join " + room + "\n");
             out.flush();
 
             currentRoom = room;
-            currentRoomOwner = null; // Biarkan dibaca dinamis lewat respons server 
+            currentRoomOwner = null; 
             isOwner = false; 
             
             memberNames.clear();
@@ -593,6 +649,7 @@ public class ClientGUI {
         }
     }
 
+    // METHOD REVISI: Logika Add Room dipisahkan dari validasi joinRoom()
     private void addRoom() {
         String room = roomField.getText().trim();
         if (room.isEmpty()) return;
@@ -601,18 +658,19 @@ public class ClientGUI {
             return;
         }
         try {
-            out.writeBytes("/join " + room + "\n");
+            // Langsung bypass instruksi tanpa membaca state list internal lokal
+            out.writeBytes("/addroom " + room + "\n");
             out.flush();
 
             currentRoom = room;
-            currentRoomOwner = currentUsername; // Pengisi owner pertama kali secara dinamis
+            currentRoomOwner = currentUsername; 
             isOwner = true; 
             
             memberNames.clear();
             if (currentUsername != null) memberNames.add(currentUsername);
 
             chatArea.setText("<html><body></body></html>");
-            appendSystemMessage("Created and joining room: " + room + " ...");
+            appendSystemMessage("✓ Room '" + room + "' created! You are the owner.");
 
             cardLayout.show(cards, "chat");
             setChatControlsEnabled(true);
@@ -621,6 +679,8 @@ public class ClientGUI {
             updateOwnerControls();
             updateRoomInfoLabel();
 
+            requestRoomList();
+            
             out.writeBytes("/info\n");
             out.flush();
         } catch (Exception e) {
@@ -649,10 +709,60 @@ public class ClientGUI {
             }
         } catch (Exception ignored) {}
 
+        // capture room info before resetting so we can ensure it's shown in main list
+        final String leftRoom = currentRoom;
+        final boolean leftWasOwner = isOwner;
+
         resetRoomState();
         setChatControlsEnabled(false);
         cardLayout.show(cards, "main");
-        requestRoomList();
+
+        // If we just closed the room ourselves, don't re-add it
+        if (leftRoom != null && leftWasOwner) {
+            if (!(justClosedRoom && lastClosedRoom != null && lastClosedRoom.equalsIgnoreCase(leftRoom))) {
+                // add to local list so the room appears immediately after exit
+                if (!roomNames.contains(leftRoom)) {
+                    roomNames.add(leftRoom);
+                    roomsModel.addElement(leftRoom + "  (Owner: " + currentUsername + ")");
+                }
+            }
+        }
+
+        Timer timer = new Timer(250, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                requestRoomList();
+            }
+        });
+        timer.setRepeats(false); // Biar jalan sekali saja
+        timer.start();
+    }
+
+    private void handleRoomClosed(String closedRoom) {
+        SwingUtilities.invokeLater(() -> {
+            if (currentRoom != null && currentRoom.equalsIgnoreCase(closedRoom)) {
+                JOptionPane.showMessageDialog(frame,
+                        "Room '" + closedRoom + "' has been closed by the owner.",
+                        "Room Closed", JOptionPane.INFORMATION_MESSAGE);
+                resetRoomState();
+                cardLayout.show(cards, "main");
+                setChatControlsEnabled(false);
+            }
+
+            int idx = roomNames.indexOf(closedRoom);
+            if (idx >= 0) {
+                roomNames.remove(idx);
+                roomsModel.remove(idx);
+            }
+
+            // clear flags if it was our closed room
+            if (lastClosedRoom != null && lastClosedRoom.equalsIgnoreCase(closedRoom)) {
+                justClosedRoom = false;
+                lastClosedRoom = null;
+            }
+
+            requestRoomList();
+        });
     }
 
     private void appendSystemMessage(String msg) {
@@ -670,7 +780,9 @@ public class ClientGUI {
             String formatted;
             int colon = msg.indexOf(":");
             if (colon > 0) {
-                String sender = msg.substring(0, colon).trim();
+				String sender = msg.substring(0, colon).trim(); sender = sender.replace("[", "")
+               .replace("]", "");
+                //String sender = msg.substring(0, colon).trim();
                 String rest = msg.substring(colon + 1).trim();
 
                 if (currentUsername != null && sender.equals(currentUsername)) {
