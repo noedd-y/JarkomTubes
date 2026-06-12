@@ -558,7 +558,7 @@ public class ClientGUI {
         }
 
         try {
-            out.writeBytes("/addroom " + room + "\n");
+            out.writeBytes("/join " + room + "\n");
             out.flush();
 
             currentRoom = room;
@@ -603,7 +603,7 @@ public class ClientGUI {
             return;
         }
         try {
-            out.writeBytes("/join " + room + "\n");
+            out.writeBytes("/addroom " + room + "\n");
             out.flush();
 
             currentRoom = room;

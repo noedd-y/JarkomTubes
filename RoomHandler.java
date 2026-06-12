@@ -102,7 +102,7 @@ public class RoomHandler {
         if(!rooms.containsValue(currentRoom))
             return "Room not found";
 
-        StringBuilder result = new StringBuilder("=== ROOM INFO: "+currentRoom.getName()+" ===");
+        StringBuilder result = new StringBuilder("=== ROOM INFO: "+currentRoom.getName()+" ===\n");
 
         result.append(currentRoom.getOwner().getUsername()).append(" (Owner)\n");
         for(User listUser: currentRoom.getUsers()){
