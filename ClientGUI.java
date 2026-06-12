@@ -1,6 +1,8 @@
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import javax.net.ssl.*;
@@ -777,6 +779,9 @@ public class ClientGUI {
 
     private void appendChatMessage(String msg) {
         SwingUtilities.invokeLater(() -> {
+			String time = LocalTime.now()
+            .format(DateTimeFormatter.ofPattern("HH:mm"));
+			
             String formatted;
             int colon = msg.indexOf(":");
             if (colon > 0) {
@@ -786,16 +791,24 @@ public class ClientGUI {
                 String rest = msg.substring(colon + 1).trim();
 
                 if (currentUsername != null && sender.equals(currentUsername)) {
-                    formatted = "<div style='text-align:right; margin:4px 8px;'>"
-                        + "<span style='background-color:#DCF8C6; padding:4px 10px; border-radius:10px;'>"
-                        + "<span style='color:#1B5E20;'><b>You</b></span>: " + escapeHtml(rest)
-                        + "</span></div>";
-                } else {
-                    formatted = "<div style='text-align:left; margin:4px 8px;'>"
-                        + "<span style='background-color:#ECECEC; padding:4px 10px; border-radius:10px;'>"
-                        + "<span style='color:#0D47A1;'><b>" + escapeHtml(sender) + "</b></span>: " + escapeHtml(rest)
-                        + "</span></div>";
-                }
+					formatted =
+						"<div style='text-align:right; margin:4px 8px;'>"
+						+ "<small>[" + time + "]</small><br>"
+						+ "<span style='background-color:#DCF8C6; padding:4px 10px; border-radius:10px;'>"
+						+ "<span style='color:#1B5E20;'><b>You</b></span>: "
+						+ escapeHtml(rest)
+						+ "</span></div>";
+				} else {
+					formatted =
+						"<div style='text-align:left; margin:4px 8px;'>"
+						+ "<small>[" + time + "]</small><br>"
+						+ "<span style='background-color:#ECECEC; padding:4px 10px; border-radius:10px;'>"
+						+ "<span style='color:#0D47A1;'><b>"
+						+ escapeHtml(sender)
+						+ "</b></span>: "
+						+ escapeHtml(rest)
+						+ "</span></div>";
+				}
             } else {
                 formatted = "<div style='text-align:center; color:gray; margin:4px;'>"
                     + escapeHtml(msg) + "</div>";
