@@ -37,28 +37,52 @@ public class ClientHandler implements Runnable {
                 if (msg.startsWith("/username ")) {
                     String username = msg.substring(10).trim();
                     if (!username.isEmpty()) {
-                        RoomHandler.setUserName(user, username);
+                        // RoomHandler.setUserName(user, username);
+                        user.setUsername(username);
                         out.writeBytes("Username set to: " + username + "\n");
                         out.flush();
                     }
+                }
+                else if (msg.startsWith("/addroom ")) {
+
+                    String roomName = msg.substring(9);
+
+                    if(RoomHandler.createRoom(roomName, user) != null){
+                        out.writeBytes("Created room: " + roomName + "\n");
+                        out.flush();
+                    }
+                    else{
+                        out.writeBytes("Unable to create room: " + roomName + "\n");
+                        out.flush();
+                    }
+                    
                 }
                 // join room
                 else if (msg.startsWith("/join ")) {
 
                     String roomName = msg.substring(6);
 
-                    RoomHandler.joinRoom(roomName, user);
-
-                    out.writeBytes("Joined room: " + roomName + "\n");
-                    out.flush();
+                    if(RoomHandler.joinRoom(roomName, user)){
+                        out.writeBytes("Joined room: " + roomName + "\n");
+                        out.flush();
+                    }
+                    else {
+                        out.writeBytes("Unable to join: " + roomName + "\n");
+                        out.flush();
+                    }
+                    
                 }
                 // exit room
                 else if (msg.equals("/leave")) {
 
-                    RoomHandler.leaveRoom(user);
-
-                    out.writeBytes("Left room\n");
-                    out.flush();
+                    if(RoomHandler.leaveRoom(user)){
+                        out.writeBytes("Left room\n");
+                        out.flush();
+                    }
+                    else {
+                        out.writeBytes("Unable to leave room\n");
+                        out.flush();
+                    }
                 }
                 // menampilkan semua room yang tersedia
                 else if (msg.equals("/listroom")) {
@@ -71,14 +95,10 @@ public class ClientHandler implements Runnable {
                 // Menampilkan isi room
                 else if (msg.equals("/info")){
                     Room currentRoom = user.getCurrentRoom();
-                    StringBuilder sb = new StringBuilder(currentRoom.getOwner().getUsername()+" (Owner)\n");
-                    for(User listUser: currentRoom.getUsers()){
-                        if(currentRoom.getOwner() == user)
-                            continue;
-                        sb.append(listUser.getUsername())
-                        .append("\n");
-                    }
-                    out.writeBytes(sb.toString());
+                    
+                    String result = RoomHandler.infoRoom(currentRoom);
+
+                    out.writeBytes(result);
                     out.flush();
                 }
                 // untuk kick user dari room 

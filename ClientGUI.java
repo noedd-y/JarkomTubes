@@ -208,7 +208,7 @@ public class ClientGUI {
         String room = roomField.getText().trim();
         if (room.isEmpty() || out == null) return;
         try {
-            out.writeBytes("/join " + room + "\n");
+            out.writeBytes("/addroom " + room + "\n");
             out.flush();
         } catch (Exception e) {
             appendChat("Failed to add room: " + e.getMessage());
