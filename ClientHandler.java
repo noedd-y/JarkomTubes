@@ -33,7 +33,7 @@ public class ClientHandler implements Runnable {
 
                 System.out.println("Received: " + msg);
 
-                //1. SET USERNAME
+                // set username
                 if (msg.startsWith("/username ")) {
                     String username = msg.substring(10).trim();
                     if (!username.isEmpty()) {
@@ -42,7 +42,7 @@ public class ClientHandler implements Runnable {
                         out.flush();
                     }
                 }
-                //2. COMMAND JOIN ROOM
+                // join room
                 else if (msg.startsWith("/join ")) {
 
                     String roomName = msg.substring(6);
@@ -52,8 +52,7 @@ public class ClientHandler implements Runnable {
                     out.writeBytes("Joined room: " + roomName + "\n");
                     out.flush();
                 }
-
-                //3. EXIT ROOM
+                // exit room
                 else if (msg.equals("/leave")) {
 
                     RoomHandler.leaveRoom(user);
@@ -61,7 +60,7 @@ public class ClientHandler implements Runnable {
                     out.writeBytes("Left room\n");
                     out.flush();
                 }
-                //4. Menampilkan semua room yang tersedia
+                // menampilkan semua room yang tersedia
                 else if (msg.equals("/listroom")) {
 
                     String roomList = RoomHandler.listRooms();
@@ -69,7 +68,6 @@ public class ClientHandler implements Runnable {
                     out.writeBytes(roomList + "\n");
                     out.flush();
                 }
-
                 // Menampilkan isi room
                 else if (msg.equals("/info")){
                     Room currentRoom = user.getCurrentRoom();
@@ -83,8 +81,22 @@ public class ClientHandler implements Runnable {
                     out.writeBytes(sb.toString());
                     out.flush();
                 }
+                // untuk kick user dari room 
+                else if(msg.startsWith("/kick ")) {
+                    String username =
+                        msg.substring(6).trim();
 
-                //4. CHAT MESSAGE (NORMAL MESSAGE)
+                    RoomHandler.kickUser(user, username);
+                }
+                //untuk owner menutup room
+                else if(msg.equals("/closeroom")) {
+                    RoomHandler.closeRoom(user);
+                    out.writeBytes(
+                        "Room closed successfully\n"
+                    );
+                    out.flush();
+                }
+                // chat normal message
                 else {
 
                     RoomHandler.broadcast(msg, user);

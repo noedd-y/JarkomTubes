@@ -35,7 +35,7 @@ public class Room {
 
     public boolean remove(User user) {
         //butuh handle klo dia remove owner
-        if(owner.equals(getOwner()))
+        if(user.equals(getOwner()))
             return false;
 
         return(users.remove(user));
