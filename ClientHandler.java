@@ -109,14 +109,33 @@ public class ClientHandler implements Runnable {
                         out.flush();
                     }
                 }
-                // menampilkan semua room yang tersedia
-                else if (msg.equals("/listroom")) {
 
-                    String roomList = RoomHandler.listRooms();
+            else if (msg.equals("/listroom")) {
 
-                    out.writeBytes(roomList + "\n");
-                    out.flush();
+                StringBuilder sb = new StringBuilder("ROOMLIST:");
+
+                boolean first = true;
+
+                for (String roomName : RoomHandler.rooms.keySet()) {
+
+                    if (!first) {
+                        sb.append(",");
+                    }
+
+                    Room room = RoomHandler.rooms.get(roomName);
+
+                    sb.append(roomName)
+                    .append("|")
+                    .append(room.getOwner().getUsername())
+                    .append("|")
+                    .append(room.size());
+
+                    first = false;
                 }
+
+                out.writeBytes(sb.toString() + "\n");
+                out.flush();
+            }
                 // Menampilkan isi room
                 else if (msg.equals("/info")){
                     Room currentRoom = user.getCurrentRoom();
