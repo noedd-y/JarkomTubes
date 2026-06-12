@@ -108,7 +108,6 @@ public class ClientGUI {
         chatArea.setText("<html><body></body></html>");
         JScrollPane scroll = new JScrollPane(chatArea);
 
-        // Members list on the right
         membersPanel = new JPanel();
         membersPanel.setLayout(new BoxLayout(membersPanel, BoxLayout.Y_AXIS));
         JScrollPane membersScroll = new JScrollPane(membersPanel);
@@ -122,7 +121,6 @@ public class ClientGUI {
         split.setResizeWeight(0.75);
         chatPanel.add(split, BorderLayout.CENTER);
 
-        // Top area: room info + controls
         JPanel topContainer = new JPanel();
         topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
 
