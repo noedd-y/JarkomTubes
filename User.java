@@ -31,4 +31,9 @@ public class User {
     public DataOutputStream getOut() {
         return out;
     }
+
+    // REVISI: Mengembalikan objek 'out' asli agar bisa dipakai untuk menulis bytes ke Client
+    public DataOutputStream getOutputStream() {
+        return out;
+    }
 }
