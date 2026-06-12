@@ -60,11 +60,36 @@ public class ClientHandler implements Runnable {
                 // join room
                 else if (msg.startsWith("/join ")) {
 
-                    String roomName = msg.substring(6);
+                    String roomName = msg.substring(6).trim();
 
                     if(RoomHandler.joinRoom(roomName, user)){
                         out.writeBytes("Joined room: " + roomName + "\n");
                         out.flush();
+                        // ========================================================
+                        // REVISI 1: BROADCAST MEMBER LIST TERBARU KE SEMUA ORANG
+                        // ========================================================
+                        Room currentRoom = user.getCurrentRoom();
+                        if (currentRoom != null) {
+                            StringBuilder sb = new StringBuilder();
+                            // Baris pertama: beri tahu Client siapa Owner dinamisnya saat ini
+                            if (currentRoom.getOwner() != null) {
+                                sb.append(currentRoom.getOwner().getUsername()).append("\n");
+                            }
+                            // Baris berikutnya: kumpulkan semua member biasa
+                            for (User listUser : currentRoom.getUsers()) {
+                                if (currentRoom.getOwner() == listUser) {
+                                    continue; // Lewati owner karena sudah di baris pertama
+                                }
+                                sb.append(listUser.getUsername()).append("\n");
+                            }
+
+                            // Broadcast data member ke semua orang di room tersebut
+                            String memberListData = sb.toString();
+                            for (User u : currentRoom.getUsers()) {
+                                u.getOutputStream().writeBytes(memberListData);
+                                u.getOutputStream().flush();
+                            }
+                        }
                     }
                     else {
                         out.writeBytes("Unable to join: " + roomName + "\n");
@@ -118,7 +143,6 @@ public class ClientHandler implements Runnable {
                 }
                 // chat normal message
                 else {
-
                     RoomHandler.broadcast(msg, user);
                 }
             }
