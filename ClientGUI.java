@@ -30,7 +30,8 @@ public class ClientGUI {
     private JLabel roomInfoLabel;
     private JPanel cards;
     private CardLayout cardLayout;
-    private String currentUsername;
+	private JTextField serverIpField;
+	private String currentUsername;	
     private String currentRoom;
     private String currentRoomOwner; // Dinamis mendeteksi owner asli ruangan
     private boolean isOwner; 
@@ -59,20 +60,30 @@ public class ClientGUI {
         cards.setLayout(cardLayout);
 
         // ===================== LOGIN PANEL =====================
-        JPanel loginPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        loginPanel.add(new JLabel("Enter your username:"), gbc);
+		JPanel loginPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(8, 8, 8, 8);
 
-        usernameField = new JTextField(18);
-        gbc.gridy = 1;
-        loginPanel.add(usernameField, gbc);
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		loginPanel.add(new JLabel("Server IP:"), gbc);
 
-        loginBtn = new JButton("Continue");
-        gbc.gridy = 2;
-        loginPanel.add(loginBtn, gbc);
+		serverIpField = new JTextField("127.0.0.1", 18);
+		gbc.gridy = 1;
+		loginPanel.add(serverIpField, gbc);
+
+		gbc.gridy = 2;
+		loginPanel.add(new JLabel("Enter your username:"), gbc);
+
+		usernameField = new JTextField(18);
+		gbc.gridy = 3;
+		loginPanel.add(usernameField, gbc);
+
+		loginBtn = new JButton("Continue");
+		gbc.gridy = 4;
+		loginPanel.add(loginBtn, gbc);
+
+		cards.add(loginPanel, "login");
 
         cards.add(loginPanel, "login");
 
@@ -223,10 +234,10 @@ public class ClientGUI {
         frame.setVisible(true);
     }
 
-    private void connectToServer(String username) {
+    private void connectToServer(String serverIp, String username) {
         try {
             SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-            socket = (SSLSocket) factory.createSocket("127.0.0.1", 6789);
+            socket = (SSLSocket) factory.createSocket(serverIp, 6789);
 
             out = new DataOutputStream(socket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -511,18 +522,24 @@ public class ClientGUI {
     // ===================== LOGIN / CONNECTION =====================
 
     private void login() {
-        String username = usernameField.getText().trim();
-        if (username.isEmpty()) {
-            JOptionPane.showMessageDialog(frame, "Please enter a username before continuing.", "Username Required", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+		String username = usernameField.getText().trim();
+		String serverIp = serverIpField.getText().trim();
 
-        connectToServer(username);
-        currentUsername = username;
-        frame.setTitle("Chat Room Client - " + username);
-        cardLayout.show(cards, "main");
-        requestRoomList();
-    }
+		if (username.isEmpty()) {
+			JOptionPane.showMessageDialog(frame, "Please enter a username before continuing.", "Username Required", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+		if (serverIp.isEmpty()) {
+			JOptionPane.showMessageDialog(frame, "Please enter the server IP address.", "Server IP Required", JOptionPane.WARNING_MESSAGE);
+			return;
+		}
+
+		connectToServer(serverIp, username);
+		currentUsername = username;
+		frame.setTitle("Chat Room Client - " + username);
+		cardLayout.show(cards, "main");
+		requestRoomList();
+	}
 
     private void setChatControlsEnabled(boolean enabled) {
         sendBtn.setEnabled(enabled);

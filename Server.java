@@ -1,6 +1,26 @@
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 import javax.net.ssl.*;
 
 public class Server {
+    public static String getLocalIP() throws SocketException {
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface iface = interfaces.nextElement();
+            if (iface.isLoopback() || !iface.isUp()) continue;
+            Enumeration<InetAddress> addresses = iface.getInetAddresses();
+            while (addresses.hasMoreElements()) {
+                InetAddress addr = addresses.nextElement();
+                if (addr instanceof Inet4Address) {
+                    return addr.getHostAddress();
+                }
+            }
+        }
+        return null;
+    }
 
     public static void main(String[] args) throws Exception {
         // Membuat factory untuk SSL Server Socket (yang bikin koneksi aman (HTTPS versi socket))
@@ -12,6 +32,7 @@ public class Server {
                 (SSLServerSocket) factory.createServerSocket(6789);
 
         System.out.println("SSL Chat Room Server Started...");
+        System.out.println("Other devices connect to: " + getLocalIP() + ":6789");
 
         //loop agar server selalu hidup
         while (true) {
